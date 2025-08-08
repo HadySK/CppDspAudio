@@ -4,11 +4,14 @@
 #include <iostream>
 #include "audiodsp.h"
 #include <fstream>
+#include <cmath>
 struct waveFileData{
     SDL_AudioSpec wavSpec;
     Uint8* wavBuffer; //waveStart
     Uint32 wavLength;
 };
+
+#define PI  3.14159265358979323846
 
 waveFileData audioF;
 
@@ -185,22 +188,45 @@ int audioDelay(int numSamples, int16_t* inputSamples, std::vector<int16_t> * out
 }
 
 #define LOOP_LENGTH 8
+#define SQUARE_LENGTH 64
 //sine_table[i] = 10000sin(2*pi*i/8)
-int16_t sine_table[LOOP_LENGTH] = {0, 7071, 10000, 7071, 0, -7071, -10000, -7071};
+//int16_t sine_table[LOOP_LENGTH] = {0, 7071, 10000, 7071, 0, -7071, -10000, -7071};
+//int16_t sine_table[LOOP_LENGTH] = {10000, 10000, 10000, 10000, -10000, -10000, -10000, -10000};
+int16_t square_wave[SQUARE_LENGTH] = {
+    10000, 10000, 10000, 10000,
+    10000, 10000, 10000, 10000,
+    10000, 10000, 10000, 10000,
+    10000, 10000, 10000, 10000,
+    10000, 10000, 10000, 10000,
+    10000, 10000, 10000, 10000,
+    10000, 10000, 10000, 10000,
+    10000, 10000, 10000, 10000,
+    -10000, -10000, -10000, -10000,
+    -10000, -10000, -10000, -10000,
+    -10000, -10000, -10000, -10000,
+    -10000, -10000, -10000, -10000,
+    -10000, -10000, -10000, -10000,
+    -10000, -10000, -10000, -10000,
+    -10000, -10000, -10000, -10000,
+    -10000, -10000, -10000, -10000};
+
 int16_t sine_ptr = 0;  // pointer into lookup table
 
 int createSinWave(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamples) {
 
-    audioF.wavSpec.freq = 8000; // 8000  because 8 elements in sine_table
+    //audioF.wavSpec.freq = 8000; // 8000  because 8 elements in sine_table
+    audioF.wavSpec.freq = 16000; // use with  outputL= 10000*sin(2*PI*(cntrSample*i)/8);
 
     std::cout << "number of channels = " << static_cast<int16_t>(audioF.wavSpec.channels) << '\n';
-
+  
     // Stereo processing
     int bufptr = 0;
     float outputL = 0.0f;
+    float sampleMult = 0.25; // added to increase sampling rate
     for (int i = 0; i < numSamples; i += 2) {
 
-         outputL = sine_table[sine_ptr];
+        //outputL = sine_table[sine_ptr];
+        outputL = 10000*sin(2*PI*(sampleMult*i)/8);
         
 
         float outputR = 0;
@@ -210,24 +236,71 @@ int createSinWave(int numSamples, int16_t* inputSamples, std::vector<int16_t> * 
         (*outputSamples)[i + 1] = static_cast<int16_t>(outputR);
         sine_ptr = (sine_ptr + 1) % LOOP_LENGTH;
     }
-    std::cout << "number of channels = " << static_cast<int16_t>(audioF.wavSpec.channels) << '\n';
 
     return 0;
 }
 
+int createSquareWave(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamples) {
+
+    audioF.wavSpec.freq = 8000; // 8000  because 8 elements in sine_table
+    // Stereo processing
+    int bufptr = 0;
+    float outputL = 0.0f;
+    float sampleMult = 0.25; // added to increase sampling rate
+    for (int i = 0; i < numSamples; i += 2) {
+
+        outputL = square_wave[sine_ptr];
+
+
+        float outputR = 0;
+        outputL = std::max(std::min(outputL, 32767.0f), -32768.0f);
+        outputR = std::max(std::min(outputR, 32767.0f), -32768.0f);
+        (*outputSamples)[i] = static_cast<int16_t>(outputL);
+        (*outputSamples)[i + 1] = static_cast<int16_t>(outputR);
+        //std::cout << "outputL = " << static_cast<int16_t>(outputL) << '\n';
+
+        sine_ptr = (sine_ptr + 1) % SQUARE_LENGTH;
+    }
+  
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
+    int xc = 0;
     sdlAudioSetup();
     // Calculate number of samples (total int16_t samples)
     int numSamples = audioF.wavLength / 2; //16 bit audio, 2 bytes per sample
     int16_t* inputSamples = (int16_t*)audioF.wavBuffer;
     std::vector<int16_t> outputSamples(numSamples);
 
+    while ((xc != 1) && (xc != 2) && (xc != 3)) {
+
+        std::cout << "Enter a number to select an option" << '\n';
+        std::cout << "1. Apply Echo to pre-recorded Audio" << '\n';
+        std::cout << "2. Generate 1 kHz Sine wave" << '\n';
+        std::cout << "3. Generate 125 Hz Square wave" << '\n';
+        std::cin >> xc;
+        switch(xc) {
+        case 1:
+            audioEcho(numSamples, inputSamples, &outputSamples);
+            break;
+        case 2:
+
+            createSinWave(numSamples, inputSamples, &outputSamples);
+            break;
+        case 3:
+
+            createSquareWave(numSamples, inputSamples, &outputSamples);
+            break;
+        default:
+            std::cout << "incorrect option !" << '\n';
+        }
+        std::cout << "xc = "<< xc << '\n';
+    }
     //audioDelay(numSamples, inputSamples, &outputSamples);
-    //audioEcho(numSamples, inputSamples, &outputSamples);
-    createSinWave(numSamples, inputSamples, &outputSamples);
    
     char saveF = false;
-    std::cout << "do you want to save the output file ? enter y to save " << '\n';
+    std::cout << "do you want to save the output file ? enter y to save / n to cancel and play audio " << '\n';
     std::cin >> saveF;
     if (saveF == 'y' || saveF == 'Y') {
         saveWavFile("output.wav", outputSamples, audioF.wavSpec);
