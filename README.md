@@ -14,10 +14,8 @@ To add a delay we take the input buffer, delay it by a set amount of time, then 
 An echo works similar to a delay but we take feedback signal from the delayed input multiplied by a set amount of gain and add it back to the input before the delay (feedback multiplied by gain create that fading echo sound)
 We apply the echo only to the left Audio channel so if you are wearing headphones you can here the original audio on the right audio channel and modified audio on the left audio channel
 ![alt text](docs/echo.png)
-<video controls>
-  <source src="https://raw.githubusercontent.com/HadySK/CppDspAudio/main/docs/echoAudio.mp4" type="video/mp4">
-</video>
 
+https://github.com/user-attachments/assets/4fffd921-b9a2-47a6-a436-ec02117e1b39
 
 ## Generating a sine wave
 To generate a sine wave, we create a look up table for the sin wave values and assign each point to a sample then save the wav file, alternatively we can just use the equation below(both option are present in the code). we have to specifiy the frequency, because we are using 8 sine wave points, we have to set the frequency to 8000 instead of 1000 to get 1Khz sine wave.
