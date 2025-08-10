@@ -64,7 +64,7 @@ int sdlAudioSetup() {
     }
     
     // Load WAV file
-    if (SDL_LoadWAV("testStereo.wav", &audioF.wavSpec, &audioF.wavBuffer, &audioF.wavLength) == NULL) {
+    if (SDL_LoadWAV("testMono.wav", &audioF.wavSpec, &audioF.wavBuffer, &audioF.wavLength) == NULL) {
         std::cerr << "Failed to load WAV file: " << SDL_GetError() << std::endl;
         SDL_Quit();
         return 1;
@@ -265,6 +265,313 @@ int createSquareWave(int numSamples, int16_t* inputSamples, std::vector<int16_t>
     return 0;
 }
 
+int movingAvgFilter(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamples) {
+
+    // Echo effect parameters
+    
+    const float GAIN = 0.5f;
+    const float delayTime = 0.5f; // seconds
+    int DELAY_BUF_SIZE = static_cast<int>(delayTime * audioF.wavSpec.freq);
+    std::cout << "number of channels = " << static_cast<int16_t>(audioF.wavSpec.channels) << '\n';
+    if (audioF.wavSpec.channels == 1) {
+        // Mono processing
+        std::vector<int16_t> delayBuffer(DELAY_BUF_SIZE, 0);
+        int bufptr = 0;
+        for (int i = 0; i < numSamples; ++i) {
+            int16_t delayedSample = delayBuffer[bufptr];
+            float delayedF = static_cast<float>(delayedSample);
+            float inputF = static_cast<float>(inputSamples[i]);
+            float outputF = inputF + delayedF;
+            outputF = std::max(std::min(outputF, 32767.0f), -32768.0f);
+            (*outputSamples)[i] = static_cast<int16_t>(outputF);
+
+            if (i >= 4) {
+                (*outputSamples)[i - 4] = ((*outputSamples)[i] +(*outputSamples)[i-1] +(*outputSamples)[i-2] \
+                    + (*outputSamples)[i-3] + (*outputSamples)[i-4])/5;
+            }
+            /*if (i >= 4) {
+                float sum = 0.0f;
+                float weights[5] = {0.4f, 0.3f, 0.2f, 0.1f, 0.08f}; // Weighted coefficients for low-pass
+                sum += weights[0] * (*outputSamples)[i];
+                sum += weights[1] * (*outputSamples)[i-1];
+                sum += weights[2] * (*outputSamples)[i-2];
+                sum += weights[3] * (*outputSamples)[i-3];
+                sum += weights[4] * (*outputSamples)[i-4];
+                (*outputSamples)[i - 4] = static_cast<int16_t>(sum); // Normalize sum
+            }*/
+
+            float feedback = inputF + delayedF * GAIN;
+            feedback = std::max(std::min(feedback, 32767.0f), -32768.0f);
+            delayBuffer[bufptr] = static_cast<int16_t>(feedback);
+            bufptr = (bufptr + 1) % DELAY_BUF_SIZE;
+        }
+    } 
+    
+
+    return 0;
+}
+
+int movingAvgFNoEcho2(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamples) {
+
+
+    std::cout << "number of channels = " << static_cast<int16_t>(audioF.wavSpec.channels) << '\n';
+    
+        for (int i = 0; i < numSamples; ++i) {
+
+            float inputF = static_cast<float>(inputSamples[i]);
+            //float outputF = inputF + delayedF;
+            float outputF = inputF ; //remove delay
+            outputF = std::max(std::min(outputF, 32767.0f), -32768.0f);
+            (*outputSamples)[i] = static_cast<int16_t>(outputF);
+
+            if (i >= 49) {
+                float sum = 0.0f;
+                //we can use weighted average to attenuate more of the higher frequencies
+                // Adjusted weights with emphasis on middle samples
+                //without weighted average, increasing the number of samples will cutoff more lower frequencies
+                float weights[50] = {
+                    0.01f, 0.01f, 0.01f, 0.01f, 0.02f, 0.02f, 0.03f, 0.03f, 0.04f, 0.05f,
+                    0.06f, 0.07f, 0.08f, 0.09f, 0.10f, 0.10f, 0.10f, 0.09f, 0.08f, 0.07f,
+                    0.06f, 0.05f, 0.04f, 0.03f, 0.03f, 0.02f, 0.02f, 0.01f, 0.01f, 0.01f,
+                    0.01f, 0.01f, 0.01f, 0.01f, 0.02f, 0.02f, 0.03f, 0.03f, 0.04f, 0.05f,
+                    0.06f, 0.07f, 0.08f, 0.09f, 0.10f, 0.10f, 0.10f, 0.09f, 0.08f, 0.07f
+                }; 
+                sum += (*outputSamples)[i];
+                sum += (*outputSamples)[i-1];
+                sum += (*outputSamples)[i-2];
+                sum += (*outputSamples)[i-3];
+                sum += (*outputSamples)[i-4];
+                sum += (*outputSamples)[i-5];
+                sum += (*outputSamples)[i-6];
+                sum += (*outputSamples)[i-7];
+                sum += (*outputSamples)[i-8];
+                sum += (*outputSamples)[i-9];
+                sum += (*outputSamples)[i-10];
+                sum += (*outputSamples)[i-11];
+                sum += (*outputSamples)[i-12];
+                sum += (*outputSamples)[i-13];
+                sum += (*outputSamples)[i-14];
+                sum += (*outputSamples)[i-15];
+                sum += (*outputSamples)[i-16];
+                sum += (*outputSamples)[i-17];
+                sum += (*outputSamples)[i-18];
+                sum += (*outputSamples)[i-19];
+                sum += (*outputSamples)[i-20];
+                sum += (*outputSamples)[i-21];
+                sum += (*outputSamples)[i-22];
+                sum += (*outputSamples)[i-23];
+                sum += (*outputSamples)[i-24];
+                sum += (*outputSamples)[i-25];
+                sum += (*outputSamples)[i-26];
+                sum += (*outputSamples)[i-27];
+                sum += (*outputSamples)[i-28];
+                sum += (*outputSamples)[i-29];
+                sum += (*outputSamples)[i-30];
+                sum += (*outputSamples)[i-31];
+                sum += (*outputSamples)[i-32];
+                sum += (*outputSamples)[i-33];
+                sum += (*outputSamples)[i-34];
+                sum += (*outputSamples)[i-35];
+                sum += (*outputSamples)[i-36];
+                sum += (*outputSamples)[i-37];
+                sum += (*outputSamples)[i-38];
+                sum += (*outputSamples)[i-39];
+                sum += (*outputSamples)[i-40];
+                sum += (*outputSamples)[i-41];
+                sum += (*outputSamples)[i-42];
+                sum += (*outputSamples)[i-43];
+                sum += (*outputSamples)[i-44];
+                sum += (*outputSamples)[i-45];
+                sum += (*outputSamples)[i-46];
+                sum += (*outputSamples)[i-47];
+                sum += (*outputSamples)[i-48];
+                sum += (*outputSamples)[i-49];
+                (*outputSamples)[i - 49] = static_cast<int16_t>(sum/25 ); // Normalize sum
+            }
+
+        }
+    return 0;
+}
+
+int IirFNoEcho2(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamples) 
+{
+
+    std::cout << "number of channels = " << static_cast<int16_t>(audioF.wavSpec.channels) << '\n';
+
+    // Second-order Butterworth high-pass filter parameters
+    float fs = static_cast<float>(audioF.wavSpec.freq); // Sample rate from audio spec
+    float fc = 5000.0f; // Cutoff frequency in Hz (5 kHz)
+    float pi = acos(-1.0f); // Pi constant
+    float w0 = 2.0f * pi * fc / fs; // Angular frequency
+    float alpha = sin(w0) / 2.0f; // For Butterworth, adjusted for digital domain
+    float cos_w0 = cos(w0);
+    float denom = 1.0f + alpha;
+    float b0 = (1.0f + cos_w0) / (2.0f * denom);
+    float b1 = -(1.0f + cos_w0) / denom;
+    float b2 = b0;
+    float a1 = -2.0f * cos_w0 / denom;
+    float a2 = (1.0f - alpha) / denom;
+
+    // Initialize previous inputs and outputs for second-order IIR filter
+    float x_prev1 = 0.0f; // Previous input sample 1
+    float x_prev2 = 0.0f; // Previous input sample 2
+    float y_prev1 = 0.0f; // Previous output sample 1
+    float y_prev2 = 0.0f; // Previous output sample 2
+
+    for (int i = 0; i < numSamples; ++i) {
+        // Convert input sample to float
+        float x = static_cast<float>(inputSamples[i]);
+
+        // Apply second-order Butterworth high-pass filter: y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
+        float y = b0 * x + b1 * x_prev1 + b2 * x_prev2 - a1 * y_prev1 - a2 * y_prev2;
+
+        // Clip output to 16-bit range
+        y = std::max(std::min(y, 32767.0f), -32768.0f);
+        (*outputSamples)[i] = static_cast<int16_t>(y);
+
+        // Update previous samples
+        x_prev2 = x_prev1;
+        x_prev1 = x;
+        y_prev2 = y_prev1;
+        y_prev1 = y;
+    }
+
+    return 0;
+
+}
+int IirFNoEcho4(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamples) {
+    // Fourth-order Butterworth high-pass filter parameters
+    float fs = static_cast<float>(audioF.wavSpec.freq); // Sample rate from audio spec
+    float fc = 5000.0f; // Cutoff frequency in Hz (5 kHz)
+    float pi = acos(-1.0f); // Pi constant
+    float w0 = 2.0f * pi * fc / fs; // Angular frequency
+    float alpha = sin(w0) / 2.0f; // For Butterworth, adjusted for digital domain
+    float cos_w0 = cos(w0);
+
+    // First second-order section
+    float denom1 = 1.0f + alpha;
+    float b0_1 = (1.0f + cos_w0) / (2.0f * denom1);
+    float b1_1 = -(1.0f + cos_w0) / denom1;
+    float b2_1 = b0_1;
+    float a1_1 = -2.0f * cos_w0 / denom1;
+    float a2_1 = (1.0f - alpha) / denom1;
+
+    // Second second-order section (same coefficients for Butterworth symmetry)
+    float b0_2 = b0_1;
+    float b1_2 = b1_1;
+    float b2_2 = b2_1;
+    float a1_2 = a1_1;
+    float a2_2 = a2_1;
+
+    // Initialize previous inputs and outputs for fourth-order IIR filter
+    float x_prev1_1 = 0.0f, x_prev2_1 = 0.0f; // First section previous inputs
+    float y_prev1_1 = 0.0f, y_prev2_1 = 0.0f; // First section previous outputs
+    float x_prev1_2 = 0.0f, x_prev2_2 = 0.0f; // Second section previous inputs
+    float y_prev1_2 = 0.0f, y_prev2_2 = 0.0f; // Second section previous outputs
+
+    for (int i = 0; i < numSamples; ++i) {
+        // Convert input sample to float
+        float x = static_cast<float>(inputSamples[i]);
+
+        // First second-order section
+        float y1 = b0_1 * x + b1_1 * x_prev1_1 + b2_1 * x_prev2_1 - a1_1 * y_prev1_1 - a2_1 * y_prev2_1;
+
+        // Second second-order section
+        float y = b0_2 * y1 + b1_2 * x_prev1_2 + b2_2 * x_prev2_2 - a1_2 * y_prev1_2 - a2_2 * y_prev2_2;
+
+        // Clip output to 16-bit range
+        y = std::max(std::min(y, 32767.0f), -32768.0f);
+        (*outputSamples)[i] = static_cast<int16_t>(y)*10;
+
+        // Update previous samples for first section
+        x_prev2_1 = x_prev1_1;
+        x_prev1_1 = x;
+        y_prev2_1 = y_prev1_1;
+        y_prev1_1 = y1;
+
+        // Update previous samples for second section
+        x_prev2_2 = x_prev1_2;
+        x_prev1_2 = y1;
+        y_prev2_2 = y_prev1_2;
+        y_prev1_2 = y;
+    }
+return 0;
+}
+
+
+//Second-order, type 1 Chebyshev, low pass filter with 2 dB of passband ripple
+// and a cutoff frequency of 1500 Hz (9425 rad/s). 
+int IirFCheby(int numSamples, int16_t* inputSamples, std::vector<int16_t>* outputSamples)
+{
+
+    float xn1 = 0.0f;
+    float yn1 = 0.0f;
+    float yn2 = 0.0f;
+    for (int i = 2; i < numSamples; ++i) {
+        // Convert input sample to float
+        float xn = static_cast<float>(inputSamples[i]);
+        float yn = 0.48255 * xn1 
+            + 0.71624315 * yn1 
+            - 0.38791310 * yn2;
+        // Clip output to 16-bit range
+        yn = std::max(std::min(yn, 32767.0f), -32768.0f);
+        (*outputSamples)[i] = static_cast<int16_t>(yn);
+        yn2 = yn1;
+        yn1 = yn;
+        xn1 = xn;
+
+    }
+
+    return 0;
+
+}
+
+#define NUM_SECTIONS 2
+
+float b[NUM_SECTIONS][3] = { 
+    {5.54030145E-01, 4.35886813E-01, 5.54030145E-01},
+    {1.81411681E-02, -1.40939730E-02, 1.81411681E-02} };
+
+float a[NUM_SECTIONS][3] = { 
+    {1.00000000E+00, -1.52873063E+00, 6.37029970E-01},
+    {1.00000000E+00, -1.51375766E+00, 8.68678806E-01} };
+
+float w[NUM_SECTIONS][2] = { 0 };
+int IirFElliptic(int numSamples, int16_t* inputSamples, std::vector<int16_t>* outputSamples)
+{
+
+    float xn1 = 0.0f;
+    float yn1 = 0.0f;
+    float yn2 = 0.0f;
+
+    int16_t section;    // second order section number
+    float input;    // input to each section
+    float wn, yn;   // intermediate and output values
+
+   
+    for (int i = 2; i < numSamples; ++i) {
+        // Convert input sample to float
+        float xn = static_cast<float>(inputSamples[i]);
+        for (section=0 ; section< NUM_SECTIONS ; section++)
+        {
+            wn = xn - a[section][1]*w[section][0]
+                - a[section][2]*w[section][1];
+            yn = b[section][0]*wn + b[section][1]*w[section][0]
+                + b[section][2]*w[section][1];
+            w[section][1] = w[section][0];
+            w[section][0] = wn;
+            input = yn; 
+        }
+
+        // Clip output to 16-bit range
+        yn = std::max(std::min(yn, 32767.0f), -32768.0f);
+        (*outputSamples)[i] = static_cast<int16_t>(yn) * 20; // multiple by 20 to restore audio level
+
+    }
+
+    return 0;
+
+}
 int main(int argc, char* argv[]) {
     int xc = 0;
     sdlAudioSetup();
@@ -272,13 +579,15 @@ int main(int argc, char* argv[]) {
     int numSamples = audioF.wavLength / 2; //16 bit audio, 2 bytes per sample
     int16_t* inputSamples = (int16_t*)audioF.wavBuffer;
     std::vector<int16_t> outputSamples(numSamples);
-
-    while ((xc != 1) && (xc != 2) && (xc != 3)) {
+    while ((xc != 1) && (xc != 2) && (xc != 3) && (xc != 4) && (xc != 5) && (xc != 10)) {
 
         std::cout << "Enter a number to select an option" << '\n';
-        std::cout << "1. Apply Echo to pre-recorded Audio" << '\n';
+        std::cout << "1. Apply Echo to the pre-recorded Audio" << '\n';
         std::cout << "2. Generate 1 kHz Sine wave" << '\n';
         std::cout << "3. Generate 125 Hz Square wave" << '\n';
+        std::cout << "4. Apply Moving Average Filter to the pre-recorded audio" << '\n';
+        std::cout << "5. Apply 2nd order Chebyshev low pass filter to the pre-recorded audio" << '\n';
+        std::cout << "6. Apply 4th order Elliptic low pass filter to the pre-recorded audio" << '\n';
         std::cin >> xc;
         switch(xc) {
         case 1:
@@ -292,19 +601,36 @@ int main(int argc, char* argv[]) {
 
             createSquareWave(numSamples, inputSamples, &outputSamples);
             break;
+        case 4:
+
+            movingAvgFNoEcho2(numSamples, inputSamples, &outputSamples);
+        case 5:
+
+            IirFCheby(numSamples, inputSamples, &outputSamples);
+        case 6:
+
+            IirFElliptic(numSamples, inputSamples, &outputSamples);
+        case 10:
+
+            IirFElliptic(numSamples, inputSamples, &outputSamples);
+            break;
         default:
             std::cout << "incorrect option !" << '\n';
         }
         std::cout << "xc = "<< xc << '\n';
     }
-    //audioDelay(numSamples, inputSamples, &outputSamples);
-   
+
     char saveF = false;
-    std::cout << "do you want to save the output file ? enter y to save / n to cancel and play audio " << '\n';
+    std::cout << "do you want to save the output file ? enter y to save / n to cancel " << '\n';
     std::cin >> saveF;
     if (saveF == 'y' || saveF == 'Y') {
         saveWavFile("output.wav", outputSamples, audioF.wavSpec);
     }
+    saveF = false;
+    std::cout << "do you want to play the audio ? enter y to play audio / n to cancel  " << '\n';
+    std::cin >> saveF;
+    if (saveF == 'y' || saveF == 'Y') {
+        
     SDL_AudioDeviceID dev = SDL_OpenAudioDevice(NULL, 0, &audioF.wavSpec, NULL, 0);
     if (dev == 0) {
         std::cerr << "Failed to open audio device: " << SDL_GetError() << std::endl;
@@ -324,6 +650,7 @@ int main(int argc, char* argv[]) {
 
     // Clean up
     SDL_CloseAudioDevice(dev);
+    }
     SDL_FreeWAV(audioF.wavBuffer);
     SDL_Quit();
     return 0;
