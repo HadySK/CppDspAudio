@@ -22,7 +22,7 @@ To generate a sine wave, we create a look up table for the sin wave values and a
 sine_table[i] = 10000sin(2*pi*i/8) << if we use 1000 instead of 10000 we get the same sine wave but smaller amplitude
 ![alt text](docs/sine.png)
 
-## Generatine a squar wave
+## Generating a square wave
 We adjust the sine wave code by changing the lookup table to switch between two opposite fixed values (10000,-10000) to generate a square wave of 125Hz
 
 ![alt text](docs/sqwave.png)
