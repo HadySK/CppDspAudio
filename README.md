@@ -2,8 +2,7 @@
 testing dsp algorithms on audio
 
 
-we are using SDL to read a .wav audio file
-we store the file into a buffer, manipulate the buffer then save it or play it back.
+We are using SDL to read a .wav audio file, store it into a buffer, manipulate the buffer then save it or play it back.
 
 ## Delay
 To add a delay we take the input buffer, delay it by a set amount of time, then add it back to the original output as shown below
@@ -27,7 +26,9 @@ We adjust the sine wave code by changing the lookup table to switch between two 
 
 ![alt text](docs/sqwave.png)
 
-![alt text](docs/sqf.png)
+![alt text](docs/sqf.png)  
+
+
 The ideal square wave contains only components of odd-integer harmonic frequencies (of the form 2π(2k − 1)f).
  3rd harmonic frequency = 375 Hz
  5th harmonic frequency = 625 Hz
@@ -63,5 +64,5 @@ Run project using Visual Studio 2022
 
 ## references
 
-audio samples taken from here https://github.com/voxserv/audio_quality_testing_samples
-Square Wave analysis https://en.wikipedia.org/wiki/Square_wave_(waveform)#Fourier_analysis
+* audio samples taken from here https://github.com/voxserv/audio_quality_testing_samples
+* Square Wave analysis https://en.wikipedia.org/wiki/Square_wave_(waveform)#Fourier_analysis
