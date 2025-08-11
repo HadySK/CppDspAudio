@@ -15,6 +15,7 @@ We apply the echo only to the left Audio channel so if you are wearing headphone
 ![alt text](docs/echo.png)
 
 https://github.com/user-attachments/assets/4fffd921-b9a2-47a6-a436-ec02117e1b39
+[Audio on Mobile](https://github.com/HadySK/CppDspAudio/raw/refs/heads/main/docs/echoAudio_.wav)
 
 ## Generating a sine wave
 To generate a sine wave, we create a look up table for the sin wave values and assign each point to a sample then save the wav file, alternatively we can just use the equation below(both option are present in the code). we have to specifiy the frequency, because we are using 8 sine wave points, we have to set the frequency to 8000 instead of 1000 to get 1Khz sine wave.
