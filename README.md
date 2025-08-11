@@ -14,7 +14,8 @@ An echo works similar to a delay but we take feedback signal from the delayed in
 We apply the echo only to the left Audio channel so if you are wearing headphones you can here the original audio on the right audio channel and modified audio on the left audio channel
 ![alt text](docs/echo.png)
 
-https://github.com/user-attachments/assets/4fffd921-b9a2-47a6-a436-ec02117e1b39
+https://github.com/user-attachments/assets/4fffd921-b9a2-47a6-a436-ec02117e1b39  
+
 [Audio on Mobile](https://github.com/HadySK/CppDspAudio/raw/refs/heads/main/docs/echoAudio_.wav)
 
 ## Generating a sine wave
