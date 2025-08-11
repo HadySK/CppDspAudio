@@ -68,3 +68,4 @@ Run project using Visual Studio 2022
 
 * audio samples taken from here https://github.com/voxserv/audio_quality_testing_samples
 * Square Wave analysis https://en.wikipedia.org/wiki/Square_wave_(waveform)#Fourier_analysis
+* Arm DSP Course https://www.arm.com/resources/education/online-courses/digital-signal-processing
