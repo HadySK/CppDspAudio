@@ -2,7 +2,9 @@
 testing dsp algorithms on audio
 
 
-We are using SDL to read a .wav audio file, store it into a buffer, manipulate the buffer then save it or play it back.
+We are using SDL to read a .wav audio file, store it into a buffer, manipulate the buffer then save it or play it back.  
+The audio file is used an analog signal source, after running each function we can save the signal as .wav file then view it using software like Audacity to act as our oscilloscope.
+
 
 ## Delay
 To add a delay we take the input buffer, delay it by a set amount of time, then add it back to the original output as shown below
@@ -62,10 +64,32 @@ We will use Matlab filter design tool to generate the coefficients for a fourth 
 We will use the same mono audio file,below is the frequency analysis after applying the elliptic IIR filter
 ![alt text](docs/IIRAfter.png)
 *Frequencies after 15kHz are cut off*
-Run project using Visual Studio 2022
 
+## Discrete Fourier Transform (DFT)
+Discrete fourier transform converts a signal from time domain to frequency domain.
+![alt text](docs/dfteq.png)
+
+we divide the equation into Real(cosine) and imaginary (sine) parts
+![alt text](docs/dftreImg.png)
+
+our DFT function creates an 8kHz sinusoidal wave then it goes through DFT where the real part will be assigned to left audio channel and imaginary part assigned to right audio channel. 
+![alt text](docs/reImgDft.png)
+
+Looking at the generated wave, the imaginary part magnitude is zero and the real part all values are zero except for two values. these are the representation of the 8khz input signal in
+frequency domain.
+The first spike is a representation of the positive 8khz input signal, the second spike
+Based on Euler's formula, a real valued sinusoidal signal may be represented by a pair of complex exponentials in the frequency domain corresponding to two contra-rotating phasors. the second spike is the representation of a signal at negative 8khz. In the frequency the value takes both positive and negative frequencies
+
+## Fast Fourier Transform (FFT)
+
+
+
+
+
+Run project using Visual Studio 2022
 ## references
 
-* audio samples taken from here https://github.com/voxserv/audio_quality_testing_samples
-* Square Wave analysis https://en.wikipedia.org/wiki/Square_wave_(waveform)#Fourier_analysis
-* Arm DSP Course https://www.arm.com/resources/education/online-courses/digital-signal-processing
+[1] audio samples taken from here https://github.com/voxserv/audio_quality_testing_samples
+[2] Square Wave analysis https://en.wikipedia.org/wiki/Square_wave_(waveform)#Fourier_analysis
+[3] DFT https://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch31.pdf
+[4] Rotating Phasors https://dspfirst.gatech.edu/chapters/03spect/demos/phasors/index.html

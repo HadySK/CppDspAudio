@@ -5,15 +5,6 @@
 #include "audiodsp.h"
 #include <fstream>
 #include <cmath>
-struct waveFileData{
-    SDL_AudioSpec wavSpec;
-    Uint8* wavBuffer; //waveStart
-    Uint32 wavLength;
-};
-
-#define PI  3.14159265358979323846
-
-waveFileData audioF;
 
 // Function to write a WAV file from a buffer
 bool saveWavFile(const char* filename, const std::vector<int16_t>& samples, const SDL_AudioSpec& spec) {
@@ -187,8 +178,7 @@ int audioDelay(int numSamples, int16_t* inputSamples, std::vector<int16_t> * out
     return 0;
 }
 
-#define LOOP_LENGTH 8
-#define SQUARE_LENGTH 64
+
 //sine_table[i] = 10000sin(2*pi*i/8)
 //int16_t sine_table[LOOP_LENGTH] = {0, 7071, 10000, 7071, 0, -7071, -10000, -7071};
 //int16_t sine_table[LOOP_LENGTH] = {10000, 10000, 10000, 10000, -10000, -10000, -10000, -10000};
@@ -526,7 +516,6 @@ int IirFCheby(int numSamples, int16_t* inputSamples, std::vector<int16_t>* outpu
 
 }
 
-#define NUM_SECTIONS 2
 
 float b[NUM_SECTIONS][3] = { 
     {5.54030145E-01, 4.35886813E-01, 5.54030145E-01},
@@ -537,6 +526,7 @@ float a[NUM_SECTIONS][3] = {
     {1.00000000E+00, -1.51375766E+00, 8.68678806E-01} };
 
 float w[NUM_SECTIONS][2] = { 0 };
+
 int IirFElliptic(int numSamples, int16_t* inputSamples, std::vector<int16_t>* outputSamples)
 {
 
@@ -572,13 +562,56 @@ int IirFElliptic(int numSamples, int16_t* inputSamples, std::vector<int16_t>* ou
     return 0;
 
 }
+
+COMPLEX samples[N];
+int DFT(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamples) {
+    audioF.wavSpec.channels = 2;
+    audioF.wavSpec.freq = 8000;
+
+    float outputL;
+    float outputR;
+    for(int n=0 ; n<N ; n++)
+    {
+        samples[n].real = cos(2*PI*TESTFREQ*n/SAMPLING_FREQ);
+        samples[n].imag = 0.0f;	
+    }
+
+   COMPLEX result[N];
+        for (int k = 0; k < N; k++) {
+            //initialize all real and imaginary values with 0
+            result[k].real = 0.0;
+            result[k].imag = 0.0;
+
+            for (int n = 0; n < N; n++)
+            {
+                result[k].real += samples[n].real * cos(2 * PI * k * n / N)
+                                + samples[n].imag * sin(2 * PI * k * n / N);
+                result[k].imag += samples[n].imag * cos(2 * PI * k * n / N)
+                                - samples[n].real * sin(2 * PI * k * n / N);
+            }
+        }
+        // copy the result to the output buffer
+        for (int k = 0; k < N; k++) {
+          // std::cout << k << " real part " << result[k].real << '\n';
+           //std::cout << k <<" imag part "<< result[k].imag*10000000000.0f << '\n';
+            outputL = std::max(std::min(result[k].real, 32767.0f), -32768.0f);
+            outputR = std::max(std::min(result[k].imag, 32767.0f), -32768.0f);
+            (*outputSamples)[k] = static_cast<int16_t>(outputL*1000.0f); // multiplied for scaling
+            (*outputSamples)[k+1] = static_cast<int16_t>(result[k].imag);// multiplied for scaling
+        }  
+
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
     int xc = 0;
     sdlAudioSetup();
     // Calculate number of samples (total int16_t samples)
     int numSamples = audioF.wavLength / 2; //16 bit audio, 2 bytes per sample
     int16_t* inputSamples = (int16_t*)audioF.wavBuffer;
-    std::vector<int16_t> outputSamples(numSamples);
+    //std::vector<int16_t> outputSamples(numSamples);
+    //only for DFT
+    std::vector<int16_t> outputSamples(N+1);
     while ((xc != 1) && (xc != 2) && (xc != 3) && (xc != 4) && (xc != 5) && (xc != 10)) {
 
         std::cout << "Enter a number to select an option" << '\n';
@@ -612,7 +645,7 @@ int main(int argc, char* argv[]) {
             IirFElliptic(numSamples, inputSamples, &outputSamples);
         case 10:
 
-            IirFElliptic(numSamples, inputSamples, &outputSamples);
+            DFT(numSamples, inputSamples, &outputSamples);
             break;
         default:
             std::cout << "incorrect option !" << '\n';
