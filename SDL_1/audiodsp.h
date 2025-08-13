@@ -26,9 +26,9 @@ typedef struct
 
 //#define N 128
 #define N 4096
-#define TESTFREQ 800f
-//to prevent spike in imaginary part
-#define TESTFREQ 800.78125f // Bin-aligned frequency
+//#define TESTFREQ 800.0f
+//to prevent spectral leakage in imaginary part
+#define TESTFREQ 800.78125f
 #define SAMPLING_FREQ 8000.0f
 
 

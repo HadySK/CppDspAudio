@@ -5,6 +5,7 @@
 #include "audiodsp.h"
 #include <fstream>
 #include <cmath>
+#include <chrono>
 
 // Function to write a WAV file from a buffer
 bool saveWavFile(const char* filename, const std::vector<int16_t>& samples, const SDL_AudioSpec& spec) {
@@ -279,17 +280,7 @@ int movingAvgFilter(int numSamples, int16_t* inputSamples, std::vector<int16_t> 
                 (*outputSamples)[i - 4] = ((*outputSamples)[i] +(*outputSamples)[i-1] +(*outputSamples)[i-2] \
                     + (*outputSamples)[i-3] + (*outputSamples)[i-4])/5;
             }
-            /*if (i >= 4) {
-                float sum = 0.0f;
-                float weights[5] = {0.4f, 0.3f, 0.2f, 0.1f, 0.08f}; // Weighted coefficients for low-pass
-                sum += weights[0] * (*outputSamples)[i];
-                sum += weights[1] * (*outputSamples)[i-1];
-                sum += weights[2] * (*outputSamples)[i-2];
-                sum += weights[3] * (*outputSamples)[i-3];
-                sum += weights[4] * (*outputSamples)[i-4];
-                (*outputSamples)[i - 4] = static_cast<int16_t>(sum); // Normalize sum
-            }*/
-
+         
             float feedback = inputF + delayedF * GAIN;
             feedback = std::max(std::min(feedback, 32767.0f), -32768.0f);
             delayBuffer[bufptr] = static_cast<int16_t>(feedback);
@@ -314,7 +305,7 @@ int movingAvgFNoEcho2(int numSamples, int16_t* inputSamples, std::vector<int16_t
             outputF = std::max(std::min(outputF, 32767.0f), -32768.0f);
             (*outputSamples)[i] = static_cast<int16_t>(outputF);
 
-            if (i >= 49) {
+            if (i >= 10) {
                 float sum = 0.0f;
                 //we can use weighted average to attenuate more of the higher frequencies
                 // Adjusted weights with emphasis on middle samples
@@ -337,48 +328,8 @@ int movingAvgFNoEcho2(int numSamples, int16_t* inputSamples, std::vector<int16_t
                 sum += (*outputSamples)[i-8];
                 sum += (*outputSamples)[i-9];
                 sum += (*outputSamples)[i-10];
-                sum += (*outputSamples)[i-11];
-                sum += (*outputSamples)[i-12];
-                sum += (*outputSamples)[i-13];
-                sum += (*outputSamples)[i-14];
-                sum += (*outputSamples)[i-15];
-                sum += (*outputSamples)[i-16];
-                sum += (*outputSamples)[i-17];
-                sum += (*outputSamples)[i-18];
-                sum += (*outputSamples)[i-19];
-                sum += (*outputSamples)[i-20];
-                sum += (*outputSamples)[i-21];
-                sum += (*outputSamples)[i-22];
-                sum += (*outputSamples)[i-23];
-                sum += (*outputSamples)[i-24];
-                sum += (*outputSamples)[i-25];
-                sum += (*outputSamples)[i-26];
-                sum += (*outputSamples)[i-27];
-                sum += (*outputSamples)[i-28];
-                sum += (*outputSamples)[i-29];
-                sum += (*outputSamples)[i-30];
-                sum += (*outputSamples)[i-31];
-                sum += (*outputSamples)[i-32];
-                sum += (*outputSamples)[i-33];
-                sum += (*outputSamples)[i-34];
-                sum += (*outputSamples)[i-35];
-                sum += (*outputSamples)[i-36];
-                sum += (*outputSamples)[i-37];
-                sum += (*outputSamples)[i-38];
-                sum += (*outputSamples)[i-39];
-                sum += (*outputSamples)[i-40];
-                sum += (*outputSamples)[i-41];
-                sum += (*outputSamples)[i-42];
-                sum += (*outputSamples)[i-43];
-                sum += (*outputSamples)[i-44];
-                sum += (*outputSamples)[i-45];
-                sum += (*outputSamples)[i-46];
-                sum += (*outputSamples)[i-47];
-                sum += (*outputSamples)[i-48];
-                sum += (*outputSamples)[i-49];
-                (*outputSamples)[i - 49] = static_cast<int16_t>(sum/25 ); // Normalize sum
+                (*outputSamples)[i - 10] = static_cast<int16_t>(sum/10 ); // Normalize sum
             }
-
         }
     return 0;
 }
@@ -538,7 +489,6 @@ int IirFElliptic(int numSamples, int16_t* inputSamples, std::vector<int16_t>* ou
     float input;    // input to each section
     float wn, yn;   // intermediate and output values
 
-   
     for (int i = 2; i < numSamples; ++i) {
         // Convert input sample to float
         float xn = static_cast<float>(inputSamples[i]);
@@ -564,7 +514,10 @@ int IirFElliptic(int numSamples, int16_t* inputSamples, std::vector<int16_t>* ou
 }
 
 COMPLEX samples[N];
+COMPLEX twiddle[N];
 int DFT(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamples) {
+
+    auto start = std::chrono::high_resolution_clock::now();
     audioF.wavSpec.channels = 2;
     audioF.wavSpec.freq = 8000;
 
@@ -572,11 +525,13 @@ int DFT(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamp
     float outputR;
     for(int n=0 ; n<N ; n++)
     {
-        samples[n].real = cos(2*PI*TESTFREQ*n/SAMPLING_FREQ);
+        //samples[n].real = cos(2*PI*TESTFREQ*n/SAMPLING_FREQ);
+        samples[n].real = static_cast<float>(inputSamples[n]);
         samples[n].imag = 0.0f;	
     }
 
    COMPLEX result[N];
+ 
         for (int k = 0; k < N; k++) {
             //initialize all real and imaginary values with 0
             result[k].real = 0.0;
@@ -590,15 +545,171 @@ int DFT(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamp
                                 - samples[n].real * sin(2 * PI * k * n / N);
             }
         }
+
         // copy the result to the output buffer
         for (int k = 0; k < N; k++) {
-          // std::cout << k << " real part " << result[k].real << '\n';
-           //std::cout << k <<" imag part "<< result[k].imag*10000000000.0f << '\n';
             outputL = std::max(std::min(result[k].real, 32767.0f), -32768.0f);
             outputR = std::max(std::min(result[k].imag, 32767.0f), -32768.0f);
             (*outputSamples)[k] = static_cast<int16_t>(outputL*1000.0f); // multiplied for scaling
-            (*outputSamples)[k+1] = static_cast<int16_t>(result[k].imag);// multiplied for scaling
+            (*outputSamples)[k+1] = static_cast<int16_t>(result[k].imag*1000.0f);// multiplied for scaling
         }  
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Calculate duration in milliseconds
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Execution time DFT : " << duration.count() << " ms" << '\n';
+
+    return 0;
+}
+
+int DFT_Twiddle(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamples) {
+
+    auto start = std::chrono::high_resolution_clock::now();
+    audioF.wavSpec.channels = 2;
+    audioF.wavSpec.freq = 8000;
+
+    float outputL;
+    float outputR;
+    int n = 0;
+    int k = 0;
+    for(n = 0; n < N; n++)
+    {
+        twiddle[n].real =  cos(2 * PI * n / N);
+        twiddle[n].imag = -sin(2 * PI * n / N);
+    }
+    for(n=0 ; n<N ; n++)
+    {
+        //samples[n].real = cos(2*PI*TESTFREQ*n/SAMPLING_FREQ);
+        samples[n].real = static_cast<float>(inputSamples[n]);
+        samples[n].imag = 0.0f;	
+    }
+
+    COMPLEX result[N];
+
+    for (k = 0; k < N; k++) {
+        //initialize all real and imaginary values with 0
+        result[k].real = 0.0;
+        result[k].imag = 0.0;
+
+        for (n = 0; n < N; n++)
+        {
+            result[k].real += samples[n].real * twiddle[(n * k) % N].real
+                + samples[n].imag * twiddle[(n * k) % N].imag;
+            result[k].imag += samples[n].imag * twiddle[(n * k) % N].real
+                - samples[n].real * twiddle[(n * k) % N].imag;
+        }
+    }
+
+
+    // copy the result to the output buffer
+    for (k = 0; k < N; k++) {
+        // std::cout << k << " real part " << result[k].real << '\n';
+        //std::cout << k <<" imag part "<< result[k].imag*10000000000.0f << '\n';
+        outputL = std::max(std::min(result[k].real, 32767.0f), -32768.0f);
+        outputR = std::max(std::min(result[k].imag, 32767.0f), -32768.0f);
+        (*outputSamples)[k] = static_cast<int16_t>(outputL*1000.0f); // multiplied for scaling
+        (*outputSamples)[k+1] = static_cast<int16_t>(result[k].imag*1000.0f);// multiplied for scaling
+    }  
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Calculate duration in milliseconds
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Execution time DFT with precalculated twiddle : " << duration.count() << " ms" << '\n';
+    return 0;
+}
+
+int DFT_FFT(int numSamples, int16_t* inputSamples, std::vector<int16_t> * outputSamples) {
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    audioF.wavSpec.channels = 2;
+    audioF.wavSpec.freq = 8000;
+
+    int n = 0;
+    int k = 0;
+    //calculate twiddle factor
+    for(n = 0; n < N; n++)
+    {
+        twiddle[n].real =  cos(2 * PI * n / N);
+        twiddle[n].imag = -sin(2 * PI * n / N);
+    }
+    //generate input sinusoidal wave
+    for(n=0 ; n<N ; n++)
+    {
+        //samples[n].real = cos(2*PI*TESTFREQ*n/SAMPLING_FREQ);
+        samples[n].real = static_cast<float>(inputSamples[n]);
+        samples[n].imag = 0.0f;	
+    }
+
+    COMPLEX result[N];
+
+    // Assume N is a power of 2
+    //calculate FFT stages  log_2(N)
+    int logN = 0;
+    int tempN = N;
+    while (tempN > 1) {
+        logN++;
+        tempN >>= 1;
+    }
+
+    // Bit reversal function
+    auto bitReverse = [](int x, int log2n) -> int {
+        int rev = 0;
+        for (int i = 0; i < log2n; ++i) {
+            rev <<= 1;
+            rev |= (x & 1);
+            x >>= 1;
+        }
+        return rev;
+    };
+
+    // Copy input in bit-reversed order
+    for (int i = 0; i < N; ++i) {
+        int rev = bitReverse(i, logN);
+        result[i] = samples[rev];
+    }
+
+    // Radix-2 FFT stages (using conjugate twiddle for sign convention)
+    for (int s = 1; s <= logN; ++s) {
+        int m = 1 << s;
+        int m2 = m >> 1;
+        COMPLEX wm = {twiddle[N / m].real, -twiddle[N / m].imag}; // conjugate for exp(+j)
+        //COMPLEX wm = {twiddle[N / m].real, twiddle[N / m].imag}; // No negation on .imag
+        for (int k = 0; k < N; k += m) {
+            COMPLEX w = {1.0f, 0.0f};
+            for (int j = 0; j < m2; ++j) {
+                COMPLEX v = result[k + j + m2];
+                float tr = w.real * v.real - w.imag * v.imag;
+                float ti = w.real * v.imag + w.imag * v.real;
+                COMPLEX u = result[k + j];
+                result[k + j].real = u.real + tr;
+                result[k + j].imag = u.imag + ti;
+                result[k + j + m2].real = u.real - tr;
+                result[k + j + m2].imag = u.imag - ti;
+                // Update w = w * wm
+                float new_real = w.real * wm.real - w.imag * wm.imag;
+                float new_imag = w.real * wm.imag + w.imag * wm.real;
+                w.real = new_real;
+                w.imag = new_imag;
+            }
+        }
+    }
+
+    // copy the result to the output buffer
+    for (k = 0; k < N; k++) {
+        float outputL = std::max(std::min(result[k].real, 32767.0f), -32768.0f);
+        float outputR = std::max(std::min(result[k].imag, 32767.0f), -32768.0f);
+        (*outputSamples)[k] = static_cast<int16_t>(outputL*1000.0f); // multiplied for scaling
+        (*outputSamples)[k+1] = static_cast<int16_t>(outputR*1000.0f);// multiplied for scaling
+    }  
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // Calculate duration in milliseconds
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    std::cout << "Execution time Radix-2 FFT : " << duration.count() << " us" << '\n';
 
     return 0;
 }
@@ -609,10 +720,13 @@ int main(int argc, char* argv[]) {
     // Calculate number of samples (total int16_t samples)
     int numSamples = audioF.wavLength / 2; //16 bit audio, 2 bytes per sample
     int16_t* inputSamples = (int16_t*)audioF.wavBuffer;
+
     //std::vector<int16_t> outputSamples(numSamples);
     //only for DFT
     std::vector<int16_t> outputSamples(N+1);
-    while ((xc != 1) && (xc != 2) && (xc != 3) && (xc != 4) && (xc != 5) && (xc != 10)) {
+
+    while ((xc != 1) && (xc != 2) && (xc != 3) && (xc != 4) && (xc != 5) 
+        && (xc != 6) && (xc != 7) && (xc != 10)) {
 
         std::cout << "Enter a number to select an option" << '\n';
         std::cout << "1. Apply Echo to the pre-recorded Audio" << '\n';
@@ -621,6 +735,7 @@ int main(int argc, char* argv[]) {
         std::cout << "4. Apply Moving Average Filter to the pre-recorded audio" << '\n';
         std::cout << "5. Apply 2nd order Chebyshev low pass filter to the pre-recorded audio" << '\n';
         std::cout << "6. Apply 4th order Elliptic low pass filter to the pre-recorded audio" << '\n';
+        std::cout << "7. Generate sin wave and move to frequency domain using DFT" << '\n';
         std::cin >> xc;
         switch(xc) {
         case 1:
@@ -643,9 +758,15 @@ int main(int argc, char* argv[]) {
         case 6:
 
             IirFElliptic(numSamples, inputSamples, &outputSamples);
-        case 10:
+        case 7:
 
             DFT(numSamples, inputSamples, &outputSamples);
+            break;
+        case 10:
+
+            //DFT(numSamples, inputSamples, &outputSamples);
+            //DFT_Twiddle(numSamples, inputSamples, &outputSamples);
+            DFT_FFT(numSamples, inputSamples, &outputSamples);
             break;
         default:
             std::cout << "incorrect option !" << '\n';

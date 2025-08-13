@@ -3,7 +3,7 @@ testing dsp algorithms on audio
 
 
 We are using SDL to read a .wav audio file, store it into a buffer, manipulate the buffer then save it or play it back.  
-The audio file is used an analog signal source, after running each function we can save the signal as .wav file then view it using software like Audacity to act as our oscilloscope.
+The audio file is used as an analog signal source, after running each function we can save the signal as .wav file then analyze it using audio software like Audacity to act as our oscilloscope.
 
 
 ## Delay
@@ -72,26 +72,52 @@ Discrete fourier transform converts a signal from time domain to frequency domai
 we divide the equation into Real(cosine) and imaginary (sine) parts
 ![alt text](docs/dftreImg.png)
 
-our DFT function creates an 8kHz sinusoidal wave then it goes through DFT where the real part will be assigned to left audio channel and imaginary part assigned to right audio channel. 
+our DFT function creates an 800hz sinusoidal wave then it goes through DFT where the real part will be assigned to left audio channel and imaginary part assigned to right audio channel. 
 ![alt text](docs/reImgDft.png)
+
 
 Looking at the generated wave, the imaginary part magnitude is zero and the real part all values are zero except for two values. these are the representation of the 8khz input signal in
 frequency domain.
-The first spike is a representation of the positive 8khz input signal, the second spike
-Based on Euler's formula, a real valued sinusoidal signal may be represented by a pair of complex exponentials in the frequency domain corresponding to two contra-rotating phasors. the second spike is the representation of a signal at negative 8khz. In the frequency the value takes both positive and negative frequencies
+The first spike is a representation of the positive 800hz input signal, the second spike
+Based on Euler's formula, a real valued sinusoidal signal may be represented by a pair of complex exponentials in the frequency domain corresponding to two contra-rotating phasors. the second spike is the representation of a signal at negative 800hz. In the frequency the value takes both positive and negative frequencies
 
 cool animation of the two phasors can be found in here 👉 [Rotating Phasors](https://dspfirst.gatech.edu/chapters/03spect/demos/phasors/graphics/phasorsn.mp4)
 
+if we can the number of samples to 4096.we get spectral leakage and see the following spikes on both real and imaginary parts
+![alt text](docs/spectralLeakageDFT.png)
+
+That happens because our 800hz is not integer multiple of the sample frequency divied by N. and there is no single value of k that correspond exactly to that frequency.
+we can work around that and set our test frequency to a float that matches exactly (800.78125f)
+
 ## Fast Fourier Transform (FFT)
+One way to make DFT faster is to precalculate and store the twiddle factors, then it will be used a lookup table of twiddle  factors
 
+```cpp
+Execution time DFT : 1861 ms
+Execution time DFT with precalculated twiddle : 129 ms
+```
+We can that with the precalculated twiddle factors, the DFT function is about 14 times faster than regular DFT function.
 
+For FFT we will use Radix-2 Algorithm,
+Radix-2 algorithm is one of the Fast Fourier transform (FFT) algorithms. It computes separately the DFTs of the even-indexed inputs (x<sub>0</sub>, x<sub>2</sub>,..., x<sub>N-2</sub>) and of the odd-indexed inputs (x<sub>1</sub>, x<sub>3</sub>,..., x<sub>N-1</sub>, and then combines those two results to produce the DFT of the whole sequence. This idea can then be performed recursively to reduce the overall runtime from O(N<sup>2</sup>) to O(N logN).
+Radix-2 algorithm requires that N(sample points) is a power of two.
 
+```cpp
+Execution time DFT : 1861 ms
+Execution time DFT with precalculated twiddle : 129 ms
+Execution time Radix-2 FFT : 813 us
+```
+Radix-2 FFT  is 155 times faster than DFT with precalculated twiddle factor, and about 2000 times faster than regular DFT !
 
+## Build & Run
 
-Run project using Visual Studio 2022
+Project uses C++14 & SDL2
+The project in the repo is made using Visual Studio 2022.
+
 ## references
 
 [1] audio samples taken from here https://github.com/voxserv/audio_quality_testing_samples
 [2] Square Wave analysis https://en.wikipedia.org/wiki/Square_wave_(waveform)#Fourier_analysis
 [3] DFT https://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch31.pdf
 [4] Rotating Phasors https://dspfirst.gatech.edu/chapters/03spect/demos/phasors/index.html
+[5] FFT https://www.phys.uconn.edu/~rozman/Courses/m3511_19s/downloads/radix2fft.pdf
