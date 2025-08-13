@@ -80,6 +80,7 @@ frequency domain.
 The first spike is a representation of the positive 8khz input signal, the second spike
 Based on Euler's formula, a real valued sinusoidal signal may be represented by a pair of complex exponentials in the frequency domain corresponding to two contra-rotating phasors. the second spike is the representation of a signal at negative 8khz. In the frequency the value takes both positive and negative frequencies
 
+https://dspfirst.gatech.edu/chapters/03spect/demos/phasors/graphics/phasorsn.mp4
 ## Fast Fourier Transform (FFT)
 
 
