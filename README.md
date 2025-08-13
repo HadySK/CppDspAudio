@@ -109,6 +109,8 @@ Execution time Radix-2 FFT : 813 us
 ```
 Radix-2 FFT  is 155 times faster than DFT with precalculated twiddle factor, and about 2000 times faster than regular DFT !
 
+Note that DFT_FFT function produces the same result with generated sin wave, but when using an audio file the result varies compared to DFT and DFT_Twiddle functions, I need to double check that fun to make sure all the calculations are correct.
+
 ## Build & Run
 
 Project uses C++14 & SDL2
