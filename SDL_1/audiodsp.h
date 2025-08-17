@@ -11,6 +11,8 @@ struct waveFileData{
 #define PI  3.14159265358979323846
 
 waveFileData audioF;
+waveFileData audioF2;
+waveFileData audioF3;
 
 #define LOOP_LENGTH 8
 #define SQUARE_LENGTH 64
@@ -25,7 +27,8 @@ typedef struct
 } COMPLEX;
 
 //#define N 128
-#define N 4096
+//#define N 4096
+#define N 21
 //#define TESTFREQ 800.0f
 //to prevent spectral leakage in imaginary part
 #define TESTFREQ 800.78125f
@@ -35,7 +38,7 @@ typedef struct
 
 int audioDelay(int numSamples, int16_t* inputSamples, std::vector<int16_t>* outputSamples);
 int audioEcho(int numSamples, int16_t* inputSamples, std::vector<int16_t>* outputSamples);
-bool saveWavFile(const char* filename, const std::vector<int16_t>& samples, const SDL_AudioSpec& spec);
+bool saveWavFile(std::string filename, const std::vector<int16_t>& samples, const SDL_AudioSpec& spec);
 
 
 #endif /*_AUDIODSP_H__*/

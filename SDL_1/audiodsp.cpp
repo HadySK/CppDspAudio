@@ -6,12 +6,13 @@
 #include <fstream>
 #include <cmath>
 #include <chrono>
+#include <string>
 
 // Function to write a WAV file from a buffer
-bool saveWavFile(const char* filename, const std::vector<int16_t>& samples, const SDL_AudioSpec& spec) {
-    std::ofstream outFile(filename, std::ios::binary);
+bool saveWavFile(std::string filename, const std::vector<int16_t>& samples, const SDL_AudioSpec& spec) {
+    std::ofstream outFile(filename.c_str(), std::ios::binary);
     if (!outFile.is_open()) {
-        std::cerr << "Failed to open output file: " << filename << std::endl;
+        std::cerr << "Failed to open output file: " << filename.c_str() << std::endl;
         return false;
     }
 
@@ -48,7 +49,8 @@ bool saveWavFile(const char* filename, const std::vector<int16_t>& samples, cons
     outFile.close();
     return true;
 }
-int sdlAudioSetup() {
+
+int sdlAudioSetup(std::string filename,waveFileData * audioData ) {
     // Initialize SDL
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         std::cerr << "SDL initialization failed: " << SDL_GetError() << std::endl;
@@ -56,16 +58,16 @@ int sdlAudioSetup() {
     }
     
     // Load WAV file
-    if (SDL_LoadWAV("testMono.wav", &audioF.wavSpec, &audioF.wavBuffer, &audioF.wavLength) == NULL) {
+    if (SDL_LoadWAV(filename.c_str(), &(audioData->wavSpec), &(audioData->wavBuffer), &(audioData->wavLength)) == NULL) {
         std::cerr << "Failed to load WAV file: " << SDL_GetError() << std::endl;
         SDL_Quit();
         return 1;
     }
 
     // Check for 16-bit format and mono or stereo
-    if (audioF.wavSpec.format != AUDIO_S16LSB || (audioF.wavSpec.channels != 1 && audioF.wavSpec.channels != 2)) {
+    if (audioData->wavSpec.format != AUDIO_S16LSB || (audioData->wavSpec.channels != 1 && audioData->wavSpec.channels != 2)) {
         std::cerr << "Unsupported audio format. Please use 16-bit mono or stereo WAV." << std::endl;
-        SDL_FreeWAV(audioF.wavBuffer);
+        SDL_FreeWAV(audioData->wavBuffer);
         SDL_Quit();
         return 1;
     }
@@ -714,19 +716,158 @@ int DFT_FFT(int numSamples, int16_t* inputSamples, std::vector<int16_t> * output
     return 0;
 }
 
+#define BETA 0.003f            // learning rate
+#define NUM_ITERS 10000          // number of iterations
+
+#define NMB_SAMPLES 969420
+#define M 1000                  // number of filter coeffs
+volatile float y_out[NMB_SAMPLES];
+int adaptiveFilterEcho(int numSamples, int16_t* inputSamples, int16_t* desiredSamples,int16_t* testSamples, std::vector<int16_t> * outputSamples) {
+
+    //float desired[NMB_SAMPLES-1000]; // storage for results
+    long T, n = 0;
+    //float error[NMB_SAMPLES];
+    float D, Y, E;
+    float W[M+1] = {0.0001};       // adaptive filter weights
+    float X[M+1] = {0.0001};       // adaptive filter delay line
+    std::cout << "numSamples = " << numSamples << '\n';
+    for (T = 0; T < NMB_SAMPLES; T++)
+    {
+        for (int m = T; m > T - M; m--){
+            if (m >= 0)
+                X[M + (m - T) - 1] = static_cast<float>(inputSamples[m])/ 32768.0f;	//X new input sample for 
+                                                //LMS filter
+            else break;
+        }
+        D = static_cast<float>(desiredSamples[T])/ 32768.0f;					//desired signal
+        Y = 0;						//filter’output set to zero
+
+        for (int i = 0; i < M; i++)
+            Y += (W[i] * X[i]);			//calculate filter output
+
+        E = D - Y;					//calculate error signal
+                                     //std::cout << "error = " << static_cast<float>(e) << '\n';
+        for (int i = 0; i < M; i++)
+            W[i] = W[i] + (BETA * E * X[i]);		//update filter coefficients
+
+        //desired[T] = D;              // store results
+                                     // std::cout << "desired = " << d << '\n';
+                                     // std::cout << "desiredsample = " << desiredSamples[t] << '\n';
+        y_out[T] = Y;
+     
+    }
+
+        float X2[M+1] = {0.0001};       // adaptive filter delay line
+        for (T = 0; T < NMB_SAMPLES; T++)
+        {
+            for (int m = T; m > T - M; m--){
+                if (m >= 0)
+                    X2[M + (m - T) - 1] = static_cast<float>(testSamples[m])/ 32768.0f;	//X new input sample for 
+                                                                                        //LMS filter
+                else break;
+            }
+            Y = 0;						//filter’output set to zero
+            for (int i = 0; i < M; i++)
+                Y += (W[i] * X2[i]);			//calculate filter output
+        //std::cout << "outputl = " << Y << '\n';
+        float outputL = std::max(std::min(static_cast<float>(y_out[T]*18000), 32767.0f), -32768.0f);
+        //float outputL = std::max(std::min(static_cast<float>(Y*18000), 32767.0f), -32768.0f);
+        //std::cout << "outputl = " << y_out[i] << '\n';
+        (*outputSamples)[T] = static_cast<int16_t>(outputL);
+
+
+    }  
+
+
+    return 0;
+}
+
+
+#define BETA_NC 0.001f            // learning rate
+#define NUM_ITERS_NC 500000          // number of iterations
+
+#define NMB_SAMPLES_NC 160000
+#define M_NC 2000                  // number of filter coeffs
+
+volatile float y_out_NC[NMB_SAMPLES_NC];
+volatile float error_NC[NMB_SAMPLES_NC];
+int adaptiveFilterNC(int numSamples, int16_t* inputSamples, int16_t* desiredSamples,int16_t* testSamples, std::vector<int16_t> * outputSamples) {
+
+    //float desired[NMB_SAMPLES-1000]; // storage for results
+    long T, n = 0;
+    //float error[NMB_SAMPLES];
+    float D, Y, E;
+    float W[M_NC+1] = {0.0001};       // adaptive filter weights
+    float X[M_NC+1] = {0.0001};       // adaptive filter delay line
+    std::cout << "numSamples = " << numSamples << '\n';
+    for (T = 0; T < NMB_SAMPLES_NC; T++)
+    {
+        for (int i = M_NC - 1; i > 0; i--) {
+            X[i] = X[i - 1];
+        }
+        X[0] = static_cast<float>(inputSamples[T]) / 32768.0f;
+        D = static_cast<float>(desiredSamples[T])/ 32768.0f;					//desired signal
+        Y = 0;						//filter’output set to zero
+
+        for (int i = 0; i < M_NC; i++)
+            Y += (W[i] * X[i]);			//calculate filter output
+
+        E = D - Y;					//calculate error signal
+        //std::cout << "error = " << static_cast<float>(e) << '\n';
+        for (int i = 0; i < M_NC; i++)
+            W[i] = W[i] + (BETA_NC * E * X[i]);		//update filter coefficients
+
+        //desired[T] = D;              // store results
+        // std::cout << "desired = " << d << '\n';
+        // std::cout << "desiredsample = " << desiredSamples[t] << '\n';
+        y_out_NC[T] = Y;
+        error_NC[T] = E;
+        //std::cout << "error  " << E << '\n';
+
+    }
+
+    float X2[M_NC+1] = {0.0001};       // adaptive filter delay line
+    for (T = 0; T < NMB_SAMPLES_NC; T++)
+    {
+        /*for (int m = T; m > T - M_NC; m--) {
+            if (m >= 0)
+                X2[M_NC + (m - T) - 1] = static_cast<float>(testSamples[m])/ 32768.0f;	//X new input sample for 
+                //LMS filter
+                else break;
+        }
+        Y = 0;						//filter’output set to zero
+        for (int i = 0; i < M_NC; i++)
+            Y += (W[i] * X2[i]);			//calculate filter output*/
+        //float outputL = std::max(std::min(static_cast<float>(Y*18000), 32767.0f), -32768.0f);
+        float outputL = std::max(std::min(static_cast<float>(y_out_NC[T]*10000), 32767.0f), -32768.0f);
+        //std::cout << "outputl = " << y_out[i] << '\n';
+        (*outputSamples)[T] = static_cast<int16_t>(outputL);
+
+
+    }  
+
+
+    return 0;
+}
+
+
 int main(int argc, char* argv[]) {
     int xc = 0;
-    sdlAudioSetup();
+    sdlAudioSetup("mefsin.wav", &audioF);
+    sdlAudioSetup("NoiseRef.wav", &audioF2);
+    sdlAudioSetup("testMon2.wav", &audioF3);
     // Calculate number of samples (total int16_t samples)
     int numSamples = audioF.wavLength / 2; //16 bit audio, 2 bytes per sample
     int16_t* inputSamples = (int16_t*)audioF.wavBuffer;
+    int16_t* desiredSamples = (int16_t*)audioF2.wavBuffer;
+    int16_t* testSamples = (int16_t*)audioF3.wavBuffer;
 
-    //std::vector<int16_t> outputSamples(numSamples);
+    std::vector<int16_t> outputSamples(numSamples);
     //only for DFT
-    std::vector<int16_t> outputSamples(N+1);
+    //std::vector<int16_t> outputSamples(NMB_SAMPLES);
 
     while ((xc != 1) && (xc != 2) && (xc != 3) && (xc != 4) && (xc != 5) 
-        && (xc != 6) && (xc != 7) && (xc != 10)) {
+        && (xc != 6) && (xc != 7) && (xc != 8) && (xc != 9) && (xc != 10)) {
 
         std::cout << "Enter a number to select an option" << '\n';
         std::cout << "1. Apply Echo to the pre-recorded Audio" << '\n';
@@ -736,6 +877,8 @@ int main(int argc, char* argv[]) {
         std::cout << "5. Apply 2nd order Chebyshev low pass filter to the pre-recorded audio" << '\n';
         std::cout << "6. Apply 4th order Elliptic low pass filter to the pre-recorded audio" << '\n';
         std::cout << "7. Generate sin wave and move to frequency domain using DFT" << '\n';
+        std::cout << "8. Apply Adaptive filter to identify unknown signal" << '\n';
+        std::cout << "9. Apply NC Adaptive filter" << '\n';
         std::cin >> xc;
         switch(xc) {
         case 1:
@@ -761,17 +904,25 @@ int main(int argc, char* argv[]) {
         case 7:
 
             DFT(numSamples, inputSamples, &outputSamples);
+            DFT_FFT(numSamples, inputSamples, &outputSamples);
             break;
+        case 8:
+
+            adaptiveFilterEcho(numSamples, inputSamples, desiredSamples, testSamples, &outputSamples);
+            break;
+        case 9:
+
+            adaptiveFilterNC(numSamples, desiredSamples,inputSamples, testSamples, &outputSamples);
         case 10:
 
             //DFT(numSamples, inputSamples, &outputSamples);
             //DFT_Twiddle(numSamples, inputSamples, &outputSamples);
-            DFT_FFT(numSamples, inputSamples, &outputSamples);
+            adaptiveFilterNC(numSamples,  desiredSamples,inputSamples, testSamples, &outputSamples);
             break;
         default:
             std::cout << "incorrect option !" << '\n';
         }
-        std::cout << "xc = "<< xc << '\n';
+ 
     }
 
     char saveF = false;
