@@ -148,9 +148,9 @@ The project in the repo is made using Visual Studio 2022.
 
 ## References
 
-[1] audio samples taken from here https://github.com/voxserv/audio_quality_testing_samples
-[2] Square Wave analysis https://en.wikipedia.org/wiki/Square_wave_(waveform)#Fourier_analysis
-[3] DFT https://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch31.pdf
-[4] Rotating Phasors https://dspfirst.gatech.edu/chapters/03spect/demos/phasors/index.html
-[5] FFT https://www.phys.uconn.edu/~rozman/Courses/m3511_19s/downloads/radix2fft.pdf
+[1] audio samples taken from here https://github.com/voxserv/audio_quality_testing_samples  
+[2] Square Wave analysis https://en.wikipedia.org/wiki/Square_wave_(waveform)#Fourier_analysis  
+[3] DFT https://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch31.pdf  
+[4] Rotating Phasors https://dspfirst.gatech.edu/chapters/03spect/demos/phasors/index.html  
+[5] FFT https://www.phys.uconn.edu/~rozman/Courses/m3511_19s/downloads/radix2fft.pdf  
 [6] https://github.com/arm-university/Digital-Signal-Processing-Education-Kit
