@@ -10,10 +10,6 @@ struct waveFileData{
 
 #define PI  3.14159265358979323846
 
-waveFileData audioF;
-waveFileData audioF2;
-waveFileData audioF3;
-
 #define LOOP_LENGTH 8
 #define SQUARE_LENGTH 64
 
@@ -34,6 +30,12 @@ typedef struct
 #define TESTFREQ 800.78125f
 #define SAMPLING_FREQ 8000.0f
 
+#ifndef WAVF_DATA
+#define WAVF_DATA
+waveFileData audioF;
+waveFileData audioF2;
+waveFileData audioF3;
+#endif
 
 
 int audioDelay(int numSamples, int16_t* inputSamples, std::vector<int16_t>* outputSamples);
