@@ -1,6 +1,8 @@
 # CppDspAudio
-testing dsp algorithms on audio
+## testing dsp algorithms on audio
 
+> No further updates updates will be made to this repo aside from a plan to add a chromatic tuner when i get some free time.
+> I'm now working on a new [repo](https://github.com/HadySK/ArmStmDsp) where I test DSP algorithms on Arm Cortex-M4 (STM32 NUCLEO-F446RE board)
 
 We are using SDL to read a .wav audio file, store it into a buffer, manipulate the buffer then save it or play it back.    
 The audio file is used as an analog signal source, after running each function we can save the signal as .wav file then analyze it using audio software like Audacity to act as our oscilloscope.  
